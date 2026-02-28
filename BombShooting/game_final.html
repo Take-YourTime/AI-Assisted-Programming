@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大砲攻城遊戲</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, skyblue, lightblue); /* 背景是漸層的藍天 */
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">大砲攻城遊戲</h1>
+    <div style="text-align: center;">
+        <label for="angle">角度 (0 - 90 度):</label>
+        <input type="number" id="angle" value="45" min="0" max="90">
+        <label for="power">力量 (10 - 100):</label>
+        <input type="number" id="power" value="50" min="10" max="100">
+        <button onclick="fire()">發射砲彈</button>
+    </div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gravity = 0.98; // 重力常數
+        let cannonX = 100; // 大砲的 x 位置
+        let cannonY = 280; // 大砲的 y 位置 (位於山丘上)
+        let castleX = 700; // 城堡的 x 位置
+        let castleY = 300; // 城堡的 y 位置 (位於山丘上)
+        let hillPoints = []; // 儲存山丘輪廓的座標點
+        let projectile = null; // 砲彈狀態
+        let craterSize = 10; // 每次山丘受砲彈命中時的彈坑大小
+
+        // 初始化山丘地形的點
+        function initHill() {
+            const hillBaseHeight = 300; // 山丘的基礎高度
+            for (let i = 0; i < canvas.width; i += 10) {
+                let heightVariation = Math.random() * 30; // 讓山丘有些不規則
+                hillPoints.push({ x: i, y: hillBaseHeight - heightVariation });
+            }
+        }
+
+        // 畫出整個場景，包括大砲、城堡、山丘和天空
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 畫雲朵
+            drawCloud(100, 50);
+            drawCloud(300, 80);
+            drawCloud(600, 40);
+
+            // 畫山丘
+            ctx.fillStyle = 'green';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            hillPoints.forEach(point => {
+                ctx.lineTo(point.x, point.y);
+            });
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.fill();
+
+            // 畫大砲
+            ctx.fillStyle = 'black';
+            ctx.fillRect(cannonX - 10, cannonY - 10, 20, 20);
+
+            // 畫城堡
+            ctx.fillStyle = 'gray';
+            ctx.fillRect(castleX - 25, castleY - 50, 50, 50);
+        }
+
+        // 畫雲朵的函數
+        function drawCloud(x, y) {
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2); // 主體雲朵
+            ctx.arc(x + 30, y, 30, 0, Math.PI * 2); // 右邊雲朵
+            ctx.arc(x - 30, y, 25, 0, Math.PI * 2); // 左邊雲朵
+            ctx.arc(x, y - 20, 25, 0, Math.PI * 2); // 上面雲朵
+            ctx.fill();
+        }
+
+        // 發射砲彈
+        function fire() {
+            const angle = parseInt(document.getElementById('angle').value);
+            const power = parseInt(document.getElementById('power').value);
+
+            // 角度轉換為弧度
+            const radian = angle * (Math.PI / 180);
+            const velocityX = power * Math.cos(radian);
+            const velocityY = -power * Math.sin(radian);
+
+            // 初始化砲彈狀態
+            projectile = {
+                x: cannonX,
+                y: cannonY,
+                vx: velocityX,
+                vy: velocityY
+            };
+
+            updateProjectile();
+        }
+
+        // 更新砲彈狀態
+        function updateProjectile() {
+            if (!projectile) return;
+
+            // 更新砲彈的位置
+            projectile.x += projectile.vx / 10;
+            projectile.y += projectile.vy / 10;
+
+            // 模擬重力
+            projectile.vy += gravity;
+
+            // 檢查砲彈是否擊中城堡
+            if (projectile.x > castleX - 25 && projectile.x < castleX + 25 &&
+                projectile.y > castleY - 50 && projectile.y < castleY) {
+                alert('你擊中了城堡！遊戲勝利！');
+                projectile = null;
+                return;
+            }
+
+            // 檢查是否落在山丘上
+            const hillHeightAtX = getHillHeightAt(projectile.x);
+            if (projectile.y >= hillHeightAtX) {
+                // 在山丘上產生彈坑
+                createCrater(projectile.x);
+                projectile = null;
+                return;
+            }
+
+            // 畫出場景和砲彈
+            drawScene();
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(projectile.x, projectile.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 繼續更新砲彈狀態
+            requestAnimationFrame(updateProjectile);
+        }
+
+        // 根據 X 座標取得山丘的高度
+        function getHillHeightAt(x) {
+            const index = Math.floor(x / 10);
+            if (index >= 0 && index < hillPoints.length) {
+                return hillPoints[index].y;
+            }
+            return canvas.height;
+        }
+
+        // 在山丘上創造彈坑
+        function createCrater(x) {
+            const index = Math.floor(x / 10);
+            for (let i = index - 3; i <= index + 3; i++) {
+                if (i >= 0 && i < hillPoints.length) {
+                    hillPoints[i].y += craterSize; // 擴大彈坑
+                }
+            }
+        }
+
+        // 初始化山丘並畫出初始場景
+        initHill();
+        drawScene();
+    </script>
+</body>
+</html>

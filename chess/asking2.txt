@@ -1,0 +1,521 @@
+Now, I want to change the expression of this game.
+The players will play the chess by the python terminal.
+The ternimal need to show the checkerboard like below two file, client.py and server.py.
+You use unicode to show the pieces.
+
+[client.py]
+import socket
+import chess
+import pygame
+import pickle
+
+# Connect to server
+SERVER_IP = '192.168.x.x'  # Replace with the server's IP on the LAN
+SERVER_PORT = 12345
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((SERVER_IP, SERVER_PORT))
+
+# Initialize the chess board
+board = chess.Board()
+
+# Pygame setup
+pygame.init()
+WIDTH, HEIGHT = 512, 512
+SQUARE_SIZE = WIDTH // 8
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Chess Client")
+
+# Load piece images
+pieces_images = {
+    'K': pygame.image.load("whiteking.png").convert_alpha(),
+    'Q': pygame.image.load("whitequeen.png").convert_alpha(),
+    'R': pygame.image.load("whiterook.png").convert_alpha(),
+    'B': pygame.image.load("whitebishop.png").convert_alpha(),
+    'N': pygame.image.load("whiteknight.png").convert_alpha(),
+    'P': pygame.image.load("whitepawn.png").convert_alpha(),
+    'k': pygame.image.load("blackking.png").convert_alpha(),
+    'q': pygame.image.load("blackqueen.png").convert_alpha(),
+    'r': pygame.image.load("blackrook.png").convert_alpha(),
+    'b': pygame.image.load("blackbishop.png").convert_alpha(),
+    'n': pygame.image.load("blackknight.png").convert_alpha(),
+    'p': pygame.image.load("blackpawn.png").convert_alpha(),
+}
+
+def draw_board():
+    colors = [pygame.Color("white"), pygame.Color("gray")]
+    for row in range(8):
+        for col in range(8):
+            color = colors[(row + col) % 2]
+            pygame.draw.rect(screen, color, pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            piece = board.piece_at(chess.square(col, 7 - row))
+            if piece:
+                screen.blit(pieces_images[piece.symbol()], (col * SQUARE_SIZE, row * SQUARE_SIZE))
+
+running = True
+selected_square = None
+
+while running and not board.is_game_over():
+    draw_board()
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            col, row = x // SQUARE_SIZE, y // SQUARE_SIZE
+            square = chess.square(col, 7 - row)
+
+            if selected_square is None:
+                # Select a piece
+                if board.piece_at(square) and board.color_at(square) == chess.BLACK:
+                    selected_square = square
+            else:
+                # Try to move to the clicked square
+                move = chess.Move(selected_square, square)
+                if move in board.legal_moves:
+                    board.push(move)
+                    client_socket.send(pickle.dumps(move))  # Send move to server
+                    selected_square = None
+                else:
+                    selected_square = None  # Deselect if the move is invalid
+
+    # Check for server's move
+    try:
+        data = client_socket.recv(1024)
+        if data:
+            server_move = pickle.loads(data)
+            board.push(server_move)
+    except BlockingIOError:
+        pass  # Ignore if no data
+
+# Close connection
+client_socket.close()
+pygame.quit()
+print("Game over.")
+
+[server.py]
+import socket
+import chess
+import pygame
+import pickle
+
+# Set up the server
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('0.0.0.0', 12345))
+server_socket.listen(1)
+print("Server waiting for a connection...")
+client_socket, client_address = server_socket.accept()
+print(f"Connected to {client_address}")
+
+# Initialize the chess board
+board = chess.Board()
+
+# Pygame setup
+pygame.init()
+WIDTH, HEIGHT = 512, 512
+SQUARE_SIZE = WIDTH // 8
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Chess Server")
+
+# Load piece images
+pieces_images = {
+    'K': pygame.image.load("whiteking.png").convert_alpha(),
+    'Q': pygame.image.load("whitequeen.png").convert_alpha(),
+    'R': pygame.image.load("whiterook.png").convert_alpha(),
+    'B': pygame.image.load("whitebishop.png").convert_alpha(),
+    'N': pygame.image.load("whiteknight.png").convert_alpha(),
+    'P': pygame.image.load("whitepawn.png").convert_alpha(),
+    'k': pygame.image.load("blackking.png").convert_alpha(),
+    'q': pygame.image.load("blackqueen.png").convert_alpha(),
+    'r': pygame.image.load("blackrook.png").convert_alpha(),
+    'b': pygame.image.load("blackbishop.png").convert_alpha(),
+    'n': pygame.image.load("blackknight.png").convert_alpha(),
+    'p': pygame.image.load("blackpawn.png").convert_alpha(),
+}
+
+def draw_board():
+    colors = [pygame.Color("white"), pygame.Color("gray")]
+    for row in range(8):
+        for col in range(8):
+            color = colors[(row + col) % 2]
+            pygame.draw.rect(screen, color, pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            piece = board.piece_at(chess.square(col, 7 - row))
+            if piece:
+                screen.blit(pieces_images[piece.symbol()], (col * SQUARE_SIZE, row * SQUARE_SIZE))
+
+running = True
+selected_square = None
+
+while running and not board.is_game_over():
+    draw_board()
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            col, row = x // SQUARE_SIZE, y // SQUARE_SIZE
+            square = chess.square(col, 7 - row)
+
+            if selected_square is None:
+                # Select a piece
+                if board.piece_at(square) and board.color_at(square) == chess.WHITE:
+                    selected_square = square
+            else:
+                # Try to move to the clicked square
+                move = chess.Move(selected_square, square)
+                if move in board.legal_moves:
+                    board.push(move)
+                    client_socket.send(pickle.dumps(move))  # Send move to client
+                    selected_square = None
+                else:
+                    selected_square = None  # Deselect if the move is invalid
+
+    # Check for client's move
+    try:
+        data = client_socket.recv(1024)
+        if data:
+            client_move = pickle.loads(data)
+            board.push(client_move)
+    except BlockingIOError:
+        pass  # Ignore if no data
+
+# Close connection
+client_socket.close()
+server_socket.close()
+pygame.quit()
+print("Game over.")
+
+
+
+Insted of using UCI format.
+The players select pieces by using keyboard(↑,↓,→,←).
+The background of the selected pieces is blue.
+And if the player press "Enter", it will show all the legal next-moving-destionation of the selected piece.
+The background of the legal next-moving-destination is green.
+Player can use → and ← to select the moving-destination, and the background of current selected moving-destination is also blue.
+
+It is successful to run.
+But after first moving, I get this message"move = chess.Move(board.piece_at(selected_square).square, selected_square)
+AttributeError: 'NoneType' object has no attribute 'square'".
+
+Ok, the last problem is solved.
+The game can run, and I can successful select piece.
+However, I can't move the selected piece, it show all the destination of the selected piece, but it do nothing after I press "Enter".
+
+OK, I found that the problem is at server.py.
+After client connect to server, I get this message "stdscr.addstr(row, col * 2, piece_symbol)
+_curses.error: addwstr() returned ERR" from server.py.
+Please solve it, and give me server.py and client.py.
+
+========================
+
+The below two python program files are chess online game.
+Run the two files can let player play chess on python terminal.
+The connection is ok. But after connecting client to server, I get this message "Traceback (most recent call last):
+  File "c:\Users\User\OneDrive - 國立中山大學\桌面\chess\server.py", line 110, in <module>
+    curses.wrapper(server_play)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\curses\__init__.py", line 94, in wrapper    return func(stdscr, *args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\OneDrive - 國立中山大學\桌面\chess\server.py", line 60, in server_play
+    stdscr.addstr(row, col * 2, piece_symbol)           current_destination)
+Terminal size too small.".
+
+
+
+
+
+
+
+
+After connection, I get "data = client_socket.recv(1024)
+KeyboardInterrupt" from client.py and "Terminal size too small. Please resize.  " from server.py.
+Below are the two file.
+
+[server.py]
+import socket
+import chess
+import pickle
+import curses  # Library for terminal UI
+
+# Set up the server
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('0.0.0.0', 12345))
+server_socket.listen(1)
+print("Server waiting for a connection...")
+client_socket, client_address = server_socket.accept()
+print(f"Connected to {client_address}")
+
+# Initialize the chess board
+board = chess.Board()
+
+# Unicode representation of pieces
+unicode_pieces = {
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+}
+
+def display_board(stdscr, selected_square=None, legal_moves=[], current_destination=None):
+    stdscr.clear()
+    max_y, max_x = stdscr.getmaxyx()  # Get terminal dimensions
+    
+    # Check if terminal size is adequate
+    if max_y < 8 or max_x < 16:
+        stdscr.addstr(0, 0, "Terminal size too small. Please resize.")
+        stdscr.refresh()
+        return
+
+    # Render the board
+    for row in range(8):
+        for col in range(8):
+            square = chess.square(col, 7 - row)
+            piece = board.piece_at(square)
+            piece_symbol = unicode_pieces[piece.symbol()] if piece else '.'
+
+            # Highlighting
+            if square == selected_square:
+                stdscr.attron(curses.color_pair(2))  # Blue for selection
+            elif square in legal_moves:
+                stdscr.attron(curses.color_pair(3))  # Green for legal moves
+            elif square == current_destination:
+                stdscr.attron(curses.color_pair(2))  # Blue for destination
+
+            # Display piece symbol
+            stdscr.addstr(row, col * 2, piece_symbol)
+            stdscr.attroff(curses.color_pair(2))
+            stdscr.attroff(curses.color_pair(3))
+    stdscr.refresh()
+
+
+def server_play(stdscr):
+    curses.curs_set(0)  # Hide cursor
+    curses.start_color()  # Initialize colors
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Normal color
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_BLUE)   # Blue for selected square
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Green for legal moves
+    
+    selected_square = chess.E2  # Default starting selection (e.g., e2)
+    legal_moves = []
+    selecting_move = False  # True if selecting a move after selecting a piece
+    current_destination = None  # To keep track of the selected destination among legal moves
+
+    while not board.is_game_over():
+        display_board(stdscr, selected_square, legal_moves, current_destination)
+
+        key = stdscr.getch()
+        if key == curses.KEY_UP:
+            selected_square = chess.square(chess.square_file(selected_square), (chess.square_rank(selected_square) + 1) % 8)
+        elif key == curses.KEY_DOWN:
+            selected_square = chess.square(chess.square_file(selected_square), (chess.square_rank(selected_square) - 1) % 8)
+        elif key == curses.KEY_LEFT:
+            selected_square = chess.square((chess.square_file(selected_square) - 1) % 8, chess.square_rank(selected_square))
+        elif key == curses.KEY_RIGHT:
+            selected_square = chess.square((chess.square_file(selected_square) + 1) % 8, chess.square_rank(selected_square))
+        elif key == ord('\n') or key == ord('\r'):  # Enter key to select piece or confirm move
+            if not selecting_move:
+                piece = board.piece_at(selected_square)
+                if piece and piece.color == board.turn:  # Ensure there's a piece and it's the player's turn
+                    legal_moves = [move.to_square for move in board.legal_moves if move.from_square == selected_square]
+                    selecting_move = True
+                    current_destination = legal_moves[0] if legal_moves else None
+            else:
+                # Confirm the move if a legal destination is selected
+                move = chess.Move(selected_square, current_destination)
+                if move in board.legal_moves:
+                    board.push(move)
+                    client_socket.send(pickle.dumps(move))  # Send the move to the client
+                    legal_moves = []
+                    selecting_move = False
+                    current_destination = None
+                else:
+                    selecting_move = False  # Deselect if the move is invalid
+
+        # Move the selection between legal moves if we're selecting a destination
+        elif selecting_move and key == curses.KEY_RIGHT:
+            if current_destination in legal_moves:
+                current_index = legal_moves.index(current_destination)
+                current_destination = legal_moves[(current_index + 1) % len(legal_moves)]
+        elif selecting_move and key == curses.KEY_LEFT:
+            if current_destination in legal_moves:
+                current_index = legal_moves.index(current_destination)
+                current_destination = legal_moves[(current_index - 1) % len(legal_moves)]
+
+        # Check for client's move
+        try:
+            data = client_socket.recv(1024)
+            if data:
+                client_move = pickle.loads(data)
+                board.push(client_move)
+        except BlockingIOError:
+            pass  # Ignore if no data
+
+# Run the game using curses
+curses.wrapper(server_play)
+
+# Close connection
+client_socket.close()
+server_socket.close()
+print("Game over.")
+
+
+[client.py]
+import socket
+import chess
+import pickle
+import curses  # Library for terminal UI
+
+# Connect to server
+SERVER_IP = '192.168.x.x'  # Replace with the server's IP on the LAN
+SERVER_PORT = 12345
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((SERVER_IP, SERVER_PORT))
+
+# Initialize the chess board
+board = chess.Board()
+
+# Unicode representation of pieces
+unicode_pieces = {
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+}
+
+# Similar display function and game logic as `server.py`
+def display_board(stdscr, selected_square=None, legal_moves=[], current_destination=None):
+    stdscr.clear()
+    max_y, max_x = stdscr.getmaxyx()  # Get terminal dimensions
+    
+    # Check if terminal size is adequate
+    if max_y < 8 or max_x < 16:
+        stdscr.addstr(0, 0, "Terminal size too small. Please resize.")
+        stdscr.refresh()
+        return
+
+    # Render the board
+    for row in range(8):
+        for col in range(8):
+            square = chess.square(col, 7 - row)
+            piece = board.piece_at(square)
+            piece_symbol = unicode_pieces[piece.symbol()] if piece else '.'
+
+            # Highlighting
+            if square == selected_square:
+                stdscr.attron(curses.color_pair(2))  # Blue for selection
+            elif square in legal_moves:
+                stdscr.attron(curses.color_pair(3))  # Green for legal moves
+            elif square == current_destination:
+                stdscr.attron(curses.color_pair(2))  # Blue for destination
+
+            # Display piece symbol
+            stdscr.addstr(row, col * 2, piece_symbol)
+            stdscr.attroff(curses.color_pair(2))
+            stdscr.attroff(curses.color_pair(3))
+    stdscr.refresh()
+
+
+def client_play(stdscr):
+    curses.curs_set(0)
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_BLUE)
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)
+
+    selected_square = chess.E2
+    legal_moves = []
+    selecting_move = False
+    current_destination = None
+
+    while not board.is_game_over():
+        display_board(stdscr, selected_square, legal_moves, current_destination)
+
+        key = stdscr.getch()
+        if key == curses.KEY_UP:
+            selected_square = chess.square(chess.square_file(selected_square), (chess.square_rank(selected_square) + 1) % 8)
+        elif key == curses.KEY_DOWN:
+            selected_square = chess.square(chess.square_file(selected_square), (chess.square_rank(selected_square) - 1) % 8)
+        elif key == curses.KEY_LEFT:
+            selected_square = chess.square((chess.square_file(selected_square) - 1) % 8, chess.square_rank(selected_square))
+        elif key == curses.KEY_RIGHT:
+            selected_square = chess.square((chess.square_file(selected_square) + 1) % 8, chess.square_rank(selected_square))
+        elif key == ord('\n') or key == ord('\r'):
+            if not selecting_move:
+                piece = board.piece_at(selected_square)
+                if piece and piece.color == board.turn:
+                    legal_moves = [move.to_square for move in board.legal_moves if move.from_square == selected_square]
+                    selecting_move = True
+                    current_destination = legal_moves[0] if legal_moves else None
+            else:
+                move = chess.Move(selected_square, current_destination)
+                if move in board.legal_moves:
+                    board.push(move)
+                    client_socket.send(pickle.dumps(move))
+                    legal_moves = []
+                    selecting_move = False
+                    current_destination = None
+                else:
+                    selecting_move = False
+
+        elif selecting_move and key == curses.KEY_RIGHT:
+            if current_destination in legal_moves:
+                current_index = legal_moves.index(current_destination)
+                current_destination = legal_moves[(current_index + 1) % len(legal_moves)]
+        elif selecting_move and key == curses.KEY_LEFT:
+            if current_destination in legal_moves:
+                current_index = legal_moves.index(current_destination)
+                current_destination = legal_moves[(current_index - 1) % len(legal_moves)]
+
+        try:
+            data = client_socket.recv(1024)
+            if data:
+                server_move = pickle.loads(data)
+                board.push(server_move)
+        except BlockingIOError:
+            pass
+
+curses.wrapper(client_play)
+client_socket.close()
+print("Game over.")
+
+
+
+The same message "line 70, in server_play
+ves, current_destination)
+          ^^^^^^^^^^^^^^
+Terminal size too small. Resize to at least 16 columns by 8 rows."
+
+Maybe, try let the size larger though some space is not used.
+
+
+Solved it!
+But after client move, it dosen't turn to server to play.
+Please made it turn to server, and after sever move, turn to client.
+And please change the rule of selection:
+1. The background of current location is blue. (same as before)
+2. Press "Enter" to select a location, and press "↑,↓,←,→" to select a loction on thecheckerboard. (same as before)
+3. If there is a piece at selected location, show all the legal moving-destination of it with green background until select next piece or change turn.
+4. If the selected location is empty and the background color is green, move the last selected piece to this location.
+
+
+You don't follow the select rules, espicialy the 4. and the 5..
+The select rules are:
+1. The background of current location is blue. (same as before)
+2. Press "Enter" to select a location, and press "↑,↓,←,→" to select a loction on thecheckerboard. (same as before)
+3. If there is a piece at selected location, show all the legal moving-destination of it with green background until select next piece or change turn.
+4. If the selected location is empty and the background color is green, move the last selected piece to this location.
+
+It seems that we can't move by detecting background color.
+So, when player select a piece, temply record all the legal moving-destinations until select next piece.
+
+I adjust the select and moving rules 4.:
+1. The background of current location is blue. (same as before)
+2. Press "Enter" to select a location, and press "↑,↓,←,→" to select a loction on thecheckerboard. (same as before)
+3. If there is a piece at selected location, show all the legal moving-destinations of it with green background until select next piece or change turn.
+4. If the selected location is empty and it is a legel destination for the selected piece, move the selected piece to this location.
+
+It can select piece.
+After select a piece, it can select destination.
+But it the program will STOP after select distination, and I can't do everything on the game, the sceen is stoped at the moment I select destination.
+Please give me the adjusted server.py and client.py.\

@@ -1,0 +1,9 @@
+
+
+
+Good job!
+Now let's add some rule to play Rubic's cube.
+1.The initial mode is the cube-rotation mode.
+2.In cube-rotation mode, if the left click button of the mouse is pressed down while the mouse is moving, then make the cube rotate according to the movement of the mouse.
+3.When a center of the cube's side is clicked, terminate cube-rotation mode and activate side-rotation mode.
+4.In side-rotation mode, press left-click to do a 90 degrees left-rotation; otherwise, right-click to do a 90 degrees right-rotation. Press "esc" to return to cube-rotation mode.

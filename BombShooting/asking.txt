@@ -1,0 +1,20 @@
+請幫我重新設計一次
+1、製作一個以html撰寫的網路遊戲
+2、程式碼有清楚的註解，解釋每一個段落在做甚麼
+3、遊戲中有三個物件，大砲、城堡與山丘
+4、玩家可以給大砲輸入兩個參數：力量、角度，以此讓大砲發射出砲彈，砲彈會受重力引響。
+5、山丘代表整個遊戲地形，大砲和城堡坐落在山丘上。大砲射出去的砲彈一定會受重力影響而落到山丘上
+6、玩家的目標是要讓砲彈命中城堡，一旦命中城堡，遊戲即勝利
+7、若發射出的砲彈不幸落在山丘上，山丘會受到破壞而產生一個彈坑，意思就是山丘會變成更加的不規則狀。
+
+
+Create a file called "sidecolor", and it has six colors.
+
+Create a python program that can archive follow rules:
+1. The program import a "sidecolor" file.
+2. Use the colors in "sidecolor", and create a .gif file that has a cube.
+3. The square will rotate slowly by itself.
+
+content of the cube: balanced, above, one corner, pirouette
+
+finally, run the python program to show the output.

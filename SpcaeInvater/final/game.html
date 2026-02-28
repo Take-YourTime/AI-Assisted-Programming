@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Invaders</title>
+  <style>
+    canvas {
+      background-color: black;
+      display: block;
+      margin: 0 auto;
+    }
+    #menu {
+      text-align: center;
+      margin-top: 20px;
+    }
+    #lives {
+      color: white;
+      font-size: 20px;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <button id="startButton">Start Game</button>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="lives">Lives: 10</div>
+  
+  <script src="game.js"></script>
+</body>
+</html>

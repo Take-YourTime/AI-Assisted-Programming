@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Invader Game</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      display: none;
+    }
+    #startButton {
+      padding: 10px 20px;
+      background-color: green;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    #startButton:hover {
+      background-color: darkgreen;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h1>Space Invader</h1>
+    <p>Lives: <span id="lives">10</span></p>
+    <p>Press ← and → to move, Z to shoot</p>
+  </div>
+
+  <div id="menu">
+    <h1>Space Invader</h1>
+    <button id="startButton">Start Game</button>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+I want to make a python project that use pygame to create a 3D Rubik's cube game.
+And I have written some code, but it doesn't work correctly.
+Could you help me fix it? I will give you the code and the rules of the game.
+
+
+
+The Rubik's cube is an object, and its nine "cells" are also objects.
+The Rubik's cube should look like the cube in following image.
+
+1. At the begin, the mode is normal-mode. 
+In this mode, keep pressing the left crick and move mouse to rotate the cube.
+If the mouse icon overlap the "center center" cell of one face, make hightlight of the cell.
+If the player use the left click to click the "center center" cell of one face, it means the player wants to rotate this face, so turn the mode to rotation-mode.
+
+2. In rotation-mode, highlight current face.
+If the player click left click, then rotation -90 degree of current face and go back to normal-mode.
+If the player click right click, then rotation 90 degree of current face and go back to normal-mode.
+If the player press "ESC" key, just go back to normal-mode.
+
+Help me fix the following python code to complete this game.
+
+
+
+The curent Rubic's cube looks strange. Please make the cube looks like the below image.
+
+
+Great! But could you make each small cube of the Rubic's cube be a true cube?
+It means that the Rubic's cube is composed by nine small cubes.
+Maybe you can let the small cube be a class.
+And the Rubic's cube is also a class, but it has nine cube class be its member varibles.
+
+Ok, now there is a big problem.
+Don't need to show the face that behind the front face.
+It means that the front face should overlap the back face.
+
+Please add a new event: when player click the middle small cube of a face, then output the information of the clicked small cube.
+The python code:
