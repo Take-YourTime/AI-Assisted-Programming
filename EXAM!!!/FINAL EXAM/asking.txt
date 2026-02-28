@@ -1,0 +1,53 @@
+Help me with my homework.
+
+I will give you the requirements later.
+
+
+Here is the assignment:
+Implement a Chatbot using Cohere, with these features:
+1. You have an edit button, like ChatGPT, that allows you to change any of your prompts. The effect is to allow you to get a different answer from Cohere (just like with ChatGPT). You are also able to hit a button to see the old conversation (like with ChatGPT) -- but better than ChatGPT, the whole old conversation is preserved, not just the answer to the single prompt that was changed.
+2. You have a plugin for running python code. When the user asks to write code, your program will have Cohere write Python code, and then you will try to run the code. If there are errors, your program will pass those back into Cohere to try to fix it. But this only iterates twice before giving up and just giving the user the broken code with an apology. If the code doesn't crash (on the first iteration or any later iteration), then it is just this final code that is displayed to the user.
+3. Provide a button that lets you "Copy code", which will put the associated code into your computer's copy buffer.
+4. Provide a feature that the user can say, "run the code" or "run the code with" and specify any arguments. In this case, you should run the code and it is the answer that will be displayed to the user. 
+
+And if there are somethings I need to do, just tell me.
+
+
+
+I need you help me setting up the backend!
+
+
+
+OK! Some problem.
+1. Add a button "Edit" behind each user question. When click this button, it allow users to edit their previous question. Then the chat bot should answer again according to the new question.
+2. Add a button "History" next to "Edit" button. When click this button, it will show all the history version of this question in a new window.
+3. When user ask it to create python code, it do nothing. It should generate code with a pugin button look like [>_].
+4. "Copy" button should copy python code if the user has ask it to generate python code.
+5. "Run code" button should run the python code if the user has ask it to generate python code.
+
+
+I see the button "Edit" and "History", but still some problem.
+1. "Edit" button can edit the text, but the chat bot doesn't answer the new question. After the user edit the question, the chat bot should delete the old answer, and give the new answer to the user.
+2. History list only show one record, it should show all the record if the user edit the question.
+3. When user ask it to create python code, it should generate python code. The python code shouldn't display, it should only display a button look like [>_]. If the user click this button, then show the python code in a new window.
+4. "Copy" button should copy python code in the new window after clicking "[>_]" button.
+5. "Run code" button should run the python code in the new window after clicking "[>_]" button with python plugin.
+
+Tell me if there are backend code or frontend code that I need to generate.
+If I need them, please help me generate them.
+
+
+Ok now, Let's just handle one question.
+"Edit" button can edit the user text, but the chatbot didn't answer the new question after editing.
+"History" doesn't record all the version of the user's question. 
+Please edit the following code to fix the above problems.
+
+
+Good job! "Edit" and "History" is completed.
+Now let's do the code function.
+When user ask to generate python code, use python plugin to generate the code.
+And their will be a "[>_]" button before "History" button if it needs to generate python code.
+After clicking "[>_]" button, it will show a window that display the python code.
+
+
+Please give me the total new file, the origin file is here:

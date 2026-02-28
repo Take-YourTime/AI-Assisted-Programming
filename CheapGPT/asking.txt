@@ -1,0 +1,149 @@
+Great! But the cohere robot can't responce my question.
+Please make sure that you only add icon.
+Do not do any other adjust, and save all the function of origin code.
+
+
+Great! Now let's add more icoms.
+Note that every icon will become a button later, I will told you how they work.
+Now please make sure that you only add icons.
+Do not do any other adjust, and save all the function of origin following code.
+Add following icons to make the user interface look loke chatbot.png .
+[code]
+
+
+No, it's wrong!
+The icons should be at the bottom of the conversion block.
+Both user block and bot block should add icon, accroading to the chatbot.png.
+The new message block should also add icons too.
+
+
+Since the program code is too long, you just give me the update code and tell me where to update.
+Don't need to give me the whole program.
+
+
+
+Great. Good job.
+But I want the user icon and user conversation block are at same heught level.
+Bot icon and bot conversation block is too.
+And please add three icon at the begin of message block.
+Also add a function, press "enter" to send the message, 
+it can only click "send" button to send message currently.
+
+Also, please save the origin function of the program.
+
+
+
+All the button icon of both user conversation block and bot conversation block shoud at the bottom of the conversation block.
+Just like the chatbot.png show.
+And the color of text should be different.
+The "enter" funtion is great.
+
+
+The botton sequence should be adjust.
+User block: redo, edit, listen, speak, think
+bot block: redo, edit, view, speak, think
+
+
+
+Now, let's add three button.
+Add user icon in front of the message block.
+And the the message block be smaller.
+Add listen and think button at the bottom of the user icon of message block.
+Do not do any other adjustment.
+
+
+
+Wrong!
+Ok, don't deal it.
+Now let's add a new function of redo button.
+Please save the other function, just add the new funtion of redo button.
+The behavior of the REDO icon is to ask Cohere to regenerate its answer (since there is an element of randomness to the AI answers).
+If the REDO button is below a user chunk, it regenerates the AI chunk below it, and throws away all later chunks.
+(We'll keep things simple by not requiring you to remember any of the lost information -- there is no go back button like ChatGPT has.) 
+If the REDO button that you hit is below an AI chunk then it regenerates that AI chunk.
+Please update the above code.
+
+
+
+Good job!
+You did great.
+Not let's add a new function of Edit button.
+The behavior of the EDIT icon is to let the user change the text of that chunk.
+The chunk can be either a user chunk or an AI chunk. If you click the edit button again before you hit enter, your changes will be erased.
+But if you hit enter, the edit button turns off and one of two things happens: 
+	1) if it is an AI chunk, the edited text is accepted, all the rest of the conversation is lost, and the prompt for the next user chunk goes below that chunk.
+	2) if it is a user chunk, the revised text is processed to get a new AI response, with all conversation below that being lost (similar to the REDO button's behavior).
+Please update the code.
+
+
+
+You did very great!!
+Now let's add a new function of Speak button.
+The behavior of the SPEAK icon is to read out loud that chunk (assume English), using javascript's already available text-to-speech methods (the voice style is up to you). Once the text is finished being read, the icon will turn off again.
+Or, if the user clicks it again before the speech is finished, then the speech will stop talking and the icon will turn off.
+The behavior is different for the tool bar at the bottom of the conversation (the tool bar below the prompt area). Hear the behavior of clicking the SPEAK icon will be to turn it on and keep it on (until another click on this icon at the bottom of the prompt area turns it off again).
+When this icon is pressed, all of the new chunks that the AI generates will automatically get spoken as well as displayed.
+Please update the code.
+
+
+
+
+Good job!
+But you create an unused Speak button, which is next to "copy code" button. (Circled by red square in wrongButton.png)
+Please delete it.
+
+And please add three new icon in front of the message-send block.
+The three icon are: user icon, listen icon, and think icon, the listen icon and think icon are also button.
+Please make the user interface look like chatbot.png.
+
+Now let's add a new function of Think button.
+
+The THINK button has two behaviors.
+For icons below user chunks (or the user prompt), it means to use the reflection method of the previous homework, where Cohere is instructed to break the problem down into three steps and then is repeatedly prompted to solve each step.
+For icons below AI chunks, the behavior is to reask Cohere the following "In a conversation, we have said this <conversation history>.
+But there is something wrong with with your answer <the chunk that you are asking to rethink>.
+Generate a single sentence that describes what you did wrong." 
+Then you take this answer and ask Cohere: "In a conversation, we have said this <conversation history>+"In generating your answer, be sure not to "+<The error that Cohere says that it made>.
+This is the answer that now goes into the chunk. (And again, like in the other parts of the assignment, the old answer is lost, as well as all of the conversation below that).
+Please update the code.
+
+
+
+Good job! You did it!!
+
+Now le's add the functions of the View button.
+
+The VIEW button is only placed in toolbars below AI chunks.
+When you click on it, the text of the AI chunk changes to a different font and displays the prompt(s) sent to Cohere, and the response(s) from Cohere that were used to generate the answer.
+When you click the view button again to turn it off, the AI chunk goes back to it's original text. Usually, the text you view will be just one prompt and one response.
+But in the case of a response that came from a THINK button, we will either see the 3-step reflection process, or else we will see the asking Cohere to infer what it did wrong and try again process.
+And the other notable case is if you had asked a math question; in that case we should see that Cohere has returned JavaScript code (which your program had used the eval() function to calculate the answer that had been displayed in the chunk).
+Please update the code.
+
+
+
+
+Good job! You did it!!
+
+Now le's add the functions of the Listen button.
+
+The behavior of the LISTEN icon is to use JavaScript speech-to-text module to get input rather than the keyboard.
+Once the speech finishes (by using javascript's built-in timeout of around 2 seconds of silence), the text will display.
+At that point the speech icon turns off (because it's a little too complicated to do the code to keep it on).
+Then the user can modify the text (if desired) before the user hits enter (which would be when the prompt becomes a complete chunk and then gets replied to by the AI).
+Please update the code.
+
+
+Okay. Let's do the last work.
+When click one of the user icon, change all the user icon image into the sequence: USER.png, MAN.png, WOMAN.png, and repeat.
+Please update the code.
+
+Could you make the user icon become a button?
+When click the user button, change the icon image th the sequence: USER.png, m.png, w.png, and repeat.
+Click one time then change the icon once.
+Click one of user button and change all the icon of user button.
+Please update the code and save the other functions of the program.
+
+
+
+

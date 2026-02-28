@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot with Cohere</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f4f4f4;
+      }
+      .chat-container {
+          max-width: 800px;
+          margin: 50px auto;
+          padding: 20px;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .messages {
+          border: 1px solid #ddd;
+          padding: 10px;
+          height: 400px;
+          overflow-y: auto;
+          margin-bottom: 10px;
+      }
+      .message {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 10px;
+      }
+      .message img {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          margin-right: 10px;
+      }
+      .message-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background: #f9f9f9;
+          padding: 10px;
+          border-radius: 8px;
+          color: #333;
+      }
+      .message.user .message-content {
+          background: #e7f3ff;
+          color: #007bff;
+      }
+      .message.bot .message-content {
+          background: #e9ffe7;
+          color: #28a745;
+      }
+      .icon-row {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 5px;
+          gap: 10px;
+      }
+      .icon-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+      }
+      .icon-button img {
+          width: 24px;
+          height: 24px;
+      }
+      .icon-button.speaking {
+          outline: 2px solid #ff0000; /* highlight speaking chunk */
+          border-radius: 4px;
+      }
+
+      /* Style for debug (View) text */
+      .debug-view {
+          font-family: "Courier New", Courier, monospace;
+          font-size: 14px;
+          white-space: pre-wrap;
+      }
+
+      /* input-area with user/listen/think icons + text box */
+      .input-area {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+      }
+      .input-icons {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+      }
+      #user-input {
+          flex: 1;
+          height: 60px;
+          resize: none;
+          padding: 5px;
+      }
+      button {
+          padding: 10px 20px;
+          border: none;
+          background: #007bff;
+          color: white;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+      button:hover {
+          background: #0056b3;
+      }
+      #editor {
+          height: 200px;
+      }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="messages" id="messages"></div>
+
+    <!-- The input area with user icon, listen button, think button, then the text box -->
+    <div class="input-area">
+      <div class="input-icons">
+        <!-- Just an image for user -->
+        <img src="USER.png" alt="User Icon" style="width:30px; height:30px;" />
+
+        <!-- Listen button triggers speech-to-text for the input -->
+        <button class="icon-button" onclick="handleInputIconClick('listen')">
+          <img src="LISTEN.png" alt="Listen Icon" style="width:30px; height:30px;" />
+        </button>
+
+        <!-- Think button for reflection on the typed text -->
+        <button class="icon-button" onclick="handleInputIconClick('think')">
+          <img src="THINK.png" alt="Think Icon" style="width:30px; height:30px;" />
+        </button>
+      </div>
+
+      <textarea id="user-input" placeholder="Type your message here..."></textarea>
+    </div>
+
+    <button id="send-button" onclick="sendMessage()">Send</button>
+    <button onclick="runCode()">Run Code</button>
+    <button onclick="copyCode()">Copy Code</button>
+
+    <div id="editor"></div>
+  </div>
+
+  <script>
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const editor = ace.edit("editor");
+    editor.setTheme("ace/theme/github");
+    editor.session.setMode("ace/mode/python");
+
+    let conversationHistory = [];
+    let pyodide;
+
+    // For Edit tracking
+    let currentlyEditing = null;
+    let originalText = "";
+
+    // For Speak tracking
+    let currentlySpokenChunk = null;
+    let speakingUtterance = null;
+
+    // SpeechRecognition (if available)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // =========================
+    // LOAD PYODIDE
+    // =========================
+    async function loadPyodideAndPackages() {
+      pyodide = await loadPyodide();
+    }
+    loadPyodideAndPackages();
+
+    // =========================
+    // EVENT LISTENERS
+    // =========================
+    userInput.addEventListener("keypress", function(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // =========================
+    // MESSAGE SENDING
+    // =========================
+    async function sendMessage(userMessage = null, messageId = null, debugInfo = null) {
+      userMessage = userMessage || userInput.value.trim();
+      if (!userMessage) return;
+
+      let coherePrompt = buildPrompt(userMessage);
+
+      if (!messageId) {
+        // New user chunk
+        messageId = appendMessage('user', userMessage);
+        conversationHistory.push({
+          role: 'user',
+          content: userMessage,
+          id: messageId,
+          history: [userMessage],
+        });
+      } else {
+        // Updating existing user chunk (redo/edit)
+        const userEntry = conversationHistory.find(entry => entry.id === messageId);
+        userEntry.content = userMessage;
+        userEntry.history.push(userMessage);
+      }
+
+      userInput.value = '';
+
+      // Make the Cohere call
+      const response = await fetch('https://api.cohere.ai/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ABqF8Z0I1Yxjf68lt7V9UEAMcBHlzEgNIjgIZWVF'
+        },
+        body: JSON.stringify({
+          prompt: coherePrompt,
+          max_tokens: 100,
+          temperature: 0.7
+        })
+      });
+
+      const data = await response.json();
+      const botMessage = data.generations[0].text.trim();
+
+      // Remove old bot msg if any, then add the new one
+      removeOldBotMessage(messageId);
+      const botMessageId = appendMessage('bot', botMessage);
+
+      // Build the debug info for this AI chunk
+      // If "debugInfo" was passed in from a Think call, we can merge it
+      let newDebug = debugInfo || [];
+      // Append our normal user->cohere call
+      newDebug.push({
+        prompt: coherePrompt,
+        response: botMessage
+      });
+
+      conversationHistory.push({
+        role: 'bot',
+        content: botMessage,
+        userMessageId: messageId,
+        id: botMessageId,
+        debug: newDebug,    // store array of prompt/response
+        isDebugView: false, // track if user clicked "view"
+      });
+
+      // If the bot output is Python code, add plugin button
+      if (isPythonCode(botMessage)) {
+        appendPythonPlugin(botMessageId, botMessage);
+      }
+    }
+
+    // =========================
+    // BUILD PROMPT
+    // =========================
+    function buildPrompt(userMessage) {
+      let historyText = conversationHistory
+        .map(entry => (entry.role === 'user' ? `You: ${entry.content}` : `Bot: ${entry.content}`))
+        .join('\n');
+      return `${historyText}\nYou: ${userMessage}\nBot:`;
+    }
+
+    // =========================
+    // APPEND MESSAGE TO DOM
+    // =========================
+    function appendMessage(role, content) {
+      const messageId = `message-${Date.now()}`;
+      const message = document.createElement('div');
+      message.className = `message ${role}`;
+      message.id = messageId;
+      message.innerHTML = `
+        <img src="${role === 'user' ? 'iconE.png' : 'iconR.png'}" alt="${role}">
+        <div class="message-content">
+          <p>${content}</p>
+          <div class="icon-row">
+            ${
+              role === 'user'
+              ? `
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'redo')">
+                    <img src="REDO.png" alt="Redo">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'edit')">
+                    <img src="EDIT.png" alt="Edit">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'listen')">
+                    <img src="LISTEN.png" alt="Listen">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'speak')">
+                    <img src="SPEAK.png" alt="Speak">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'think')">
+                    <img src="THINK.png" alt="Think">
+                  </button>
+                `
+              : `
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'redo')">
+                    <img src="REDO.png" alt="Redo">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'edit')">
+                    <img src="EDIT.png" alt="Edit">
+                  </button>
+                  <!-- NEW: The View button for AI chunks -->
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'view')">
+                    <img src="VIEW.png" alt="View">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'speak')">
+                    <img src="SPEAK.png" alt="Speak">
+                  </button>
+                  <button class="icon-button" onclick="handleIconClick('${messageId}', 'think')">
+                    <img src="THINK.png" alt="Think">
+                  </button>
+                `
+            }
+          </div>
+        </div>
+      `;
+      messagesDiv.appendChild(message);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      return messageId;
+    }
+
+    // =========================
+    // REMOVE OLD BOT MESSAGE
+    // =========================
+    function removeOldBotMessage(userMessageId) {
+      const botMessage = conversationHistory.find(
+        entry => entry.role === 'bot' && entry.userMessageId === userMessageId
+      );
+      if (botMessage) {
+        const botMessageElement = document.getElementById(botMessage.id);
+        if (botMessageElement) botMessageElement.remove();
+        conversationHistory = conversationHistory.filter(entry => entry.id !== botMessage.id);
+      }
+    }
+
+    // =========================
+    // REMOVE MESSAGES FROM INDEX
+    // =========================
+    function removeMessagesFromIndex(startIndex) {
+      for (let i = conversationHistory.length - 1; i >= startIndex; i--) {
+        const entry = conversationHistory[i];
+        const entryElement = document.getElementById(entry.id);
+        if (entryElement) {
+          entryElement.remove();
+        }
+        conversationHistory.splice(i, 1);
+      }
+    }
+
+    // =========================
+    // EDIT LOGIC
+    // =========================
+    function startEditing(messageId) {
+      if (currentlyEditing && currentlyEditing !== messageId) {
+        revertEditing(currentlyEditing);
+      }
+      const messageEl = document.getElementById(messageId);
+      if (!messageEl) return;
+
+      currentlyEditing = messageId;
+      const textEl = messageEl.querySelector('p');
+      originalText = textEl.textContent;
+
+      const textArea = document.createElement('textarea');
+      textArea.value = originalText;
+      textArea.style.width = '100%';
+      textArea.style.height = '60px';
+
+      textArea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          finishEditing(messageId, textArea.value.trim());
+        }
+      });
+
+      textEl.replaceWith(textArea);
+    }
+
+    function revertEditing(messageId) {
+      const messageEl = document.getElementById(messageId);
+      if (!messageEl) return;
+
+      const textArea = messageEl.querySelector('textarea');
+      if (textArea) {
+        const p = document.createElement('p');
+        p.textContent = originalText;
+        textArea.replaceWith(p);
+      }
+      currentlyEditing = null;
+      originalText = "";
+    }
+
+    function finishEditing(messageId, newText) {
+      const msgIndex = conversationHistory.findIndex(e => e.id === messageId);
+      if (msgIndex === -1) return;
+
+      const editedEntry = conversationHistory[msgIndex];
+      const messageEl = document.getElementById(messageId);
+      const textArea = messageEl.querySelector('textarea');
+      if (!textArea) return;
+
+      const p = document.createElement('p');
+      p.textContent = newText || originalText;
+      textArea.replaceWith(p);
+
+      currentlyEditing = null;
+      if (!newText || newText === originalText) {
+        originalText = "";
+        return;
+      }
+
+      if (editedEntry.role === 'bot') {
+        // AI chunk edited -> discard everything after
+        editedEntry.content = newText;
+        removeMessagesFromIndex(msgIndex + 1);
+      }
+      else if (editedEntry.role === 'user') {
+        // User chunk edited -> new text triggers new AI response, discard everything after
+        editedEntry.content = newText;
+        editedEntry.history.push(newText);
+        const botIndex = conversationHistory.findIndex(
+          (e, idx) => idx > msgIndex && e.role === 'bot' && e.userMessageId === messageId
+        );
+        if (botIndex !== -1) {
+          removeMessagesFromIndex(botIndex);
+        }
+        sendMessage(newText, messageId);
+      }
+      originalText = "";
+    }
+
+    // =========================
+    // SPEAK LOGIC (CHUNK-LEVEL)
+    // =========================
+    function speakChunk(messageId) {
+      // Stop any current speech
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      const entry = conversationHistory.find(e => e.id === messageId);
+      if (!entry) return;
+
+      toggleSpeakIconOn(messageId);
+
+      speakingUtterance = new SpeechSynthesisUtterance(entry.content);
+      currentlySpokenChunk = messageId;
+
+      speakingUtterance.onend = () => {
+        toggleSpeakIconOff(messageId);
+        speakingUtterance = null;
+        currentlySpokenChunk = null;
+      };
+      speakingUtterance.onerror = (e) => {
+        console.error('SpeechSynthesis error:', e);
+        toggleSpeakIconOff(messageId);
+        speakingUtterance = null;
+        currentlySpokenChunk = null;
+      };
+
+      window.speechSynthesis.speak(speakingUtterance);
+    }
+
+    function stopSpeaking() {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      if (currentlySpokenChunk) {
+        toggleSpeakIconOff(currentlySpokenChunk);
+        currentlySpokenChunk = null;
+        speakingUtterance = null;
+      }
+    }
+
+    function toggleSpeakIconOn(messageId) {
+      const msgEl = document.getElementById(messageId);
+      if (!msgEl) return;
+      const speakBtn = msgEl.querySelector('button.icon-button[onclick*="speak"]');
+      if (speakBtn) speakBtn.classList.add('speaking');
+    }
+
+    function toggleSpeakIconOff(messageId) {
+      const msgEl = document.getElementById(messageId);
+      if (!msgEl) return;
+      const speakBtn = msgEl.querySelector('button.icon-button[onclick*="speak"]');
+      if (speakBtn) speakBtn.classList.remove('speaking');
+    }
+
+    // =========================
+    // THINK LOGIC (multi-step)
+    // =========================
+    async function thinkUserReflection(userMessage) {
+      // Example reflection approach: break problem into 3 steps
+      const reflectionPrompt = `
+You are a helpful AI that uses a reflection method.
+Given the user question below, break the problem into three steps and solve each step in turn:
+
+Question:
+${userMessage}
+
+Provide your solution step by step:
+`;
+      const resp = await fetch('https://api.cohere.ai/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ABqF8Z0I1Yxjf68lt7V9UEAMcBHlzEgNIjgIZWVF'
+        },
+        body: JSON.stringify({
+          prompt: reflectionPrompt,
+          max_tokens: 200,
+          temperature: 0.7
+        })
+      });
+      const data = await resp.json();
+      return {
+        prompt: reflectionPrompt,
+        answer: data.generations[0].text.trim()
+      };
+    }
+
+    async function thinkAIReflection(aiContent) {
+      // 1) Single sentence describing the mistake
+      const conversationText = conversationHistory
+        .map(e => (e.role === 'user' ? `You: ${e.content}` : `Bot: ${e.content}`))
+        .join('\n');
+
+      const errorPrompt = `
+In a conversation, we have said this:
+${conversationText}
+
+But there is something wrong with your answer:
+${aiContent}
+
+Generate a single sentence that describes what you did wrong:
+`;
+      let resp = await fetch('https://api.cohere.ai/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ABqF8Z0I1Yxjf68lt7V9UEAMcBHlzEgNIjgIZWVF'
+        },
+        body: JSON.stringify({
+          prompt: errorPrompt,
+          max_tokens: 50,
+          temperature: 0.7
+        })
+      });
+      let data = await resp.json();
+      const errorSentence = data.generations[0].text.trim();
+
+      // 2) Corrected answer
+      const correctionPrompt = `
+In a conversation, we have said this:
+${conversationText}
+
+In generating your answer, be sure not to ${errorSentence}.
+
+Now provide the corrected answer here:
+`;
+      resp = await fetch('https://api.cohere.ai/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ABqF8Z0I1Yxjf68lt7V9UEAMcBHlzEgNIjgIZWVF'
+        },
+        body: JSON.stringify({
+          prompt: correctionPrompt,
+          max_tokens: 200,
+          temperature: 0.7
+        })
+      });
+      data = await resp.json();
+      return {
+        step1Prompt: errorPrompt,
+        step1Answer: errorSentence,
+        step2Prompt: correctionPrompt,
+        step2Answer: data.generations[0].text.trim()
+      };
+    }
+
+    async function handleThinkClick(messageId) {
+      // If it's -1 or a user chunk => reflection approach
+      // If it's an AI chunk => "what was wrong?" approach
+      const idx = conversationHistory.findIndex(e => e.id === messageId);
+
+      // If no entry found => treat as user prompt area
+      if (idx === -1) {
+        const userMsg = userInput.value.trim();
+        if (!userMsg) return; // nothing to think about
+
+        const reflectionData = await thinkUserReflection(userMsg);
+        // Add a new bot chunk with reflectionData.answer
+        // plus debug info capturing the reflection prompt + response
+        const debugArr = [
+          { prompt: reflectionData.prompt, response: reflectionData.answer }
+        ];
+        const botMessageId = appendMessage('bot', reflectionData.answer);
+        conversationHistory.push({
+          role: 'bot',
+          content: reflectionData.answer,
+          userMessageId: null,
+          id: botMessageId,
+          debug: debugArr,
+          isDebugView: false
+        });
+      }
+      else {
+        const entry = conversationHistory[idx];
+        if (entry.role === 'user') {
+          // reflection approach
+          const reflectionData = await thinkUserReflection(entry.content);
+
+          // remove everything from idx+1 onward
+          removeMessagesFromIndex(idx+1);
+
+          // remove old bot chunk for this user if any
+          removeOldBotMessage(entry.id);
+
+          // Add new AI chunk
+          const debugArr = [
+            { prompt: reflectionData.prompt, response: reflectionData.answer }
+          ];
+          const botMessageId = appendMessage('bot', reflectionData.answer);
+          conversationHistory.push({
+            role: 'bot',
+            content: reflectionData.answer,
+            userMessageId: entry.id,
+            id: botMessageId,
+            debug: debugArr,
+            isDebugView: false
+          });
+        } else {
+          // AI chunk reflection approach
+          const oldAIContent = entry.content;
+
+          // remove everything from idx onward
+          removeMessagesFromIndex(idx);
+
+          // generate corrected chunk
+          const reflection = await thinkAIReflection(oldAIContent);
+          // reflection.step1Prompt, reflection.step1Answer, reflection.step2Prompt, reflection.step2Answer
+
+          // Insert corrected chunk as new AI
+          const debugArr = [
+            { prompt: reflection.step1Prompt, response: reflection.step1Answer },
+            { prompt: reflection.step2Prompt, response: reflection.step2Answer }
+          ];
+          const botMessageId = appendMessage('bot', reflection.step2Answer);
+          conversationHistory.push({
+            role: 'bot',
+            content: reflection.step2Answer,
+            userMessageId: null,
+            id: botMessageId,
+            debug: debugArr,
+            isDebugView: false
+          });
+        }
+      }
+    }
+
+    // =========================
+    // VIEW TOGGLE LOGIC
+    // =========================
+    function toggleView(messageId) {
+      const entry = conversationHistory.find(e => e.id === messageId);
+      if (!entry) return;
+
+      const msgEl = document.getElementById(messageId);
+      if (!msgEl) return;
+      const p = msgEl.querySelector('p');
+
+      // If turning OFF debug view
+      if (entry.isDebugView) {
+        p.classList.remove('debug-view');
+        p.textContent = entry.content; // revert to final text
+        entry.isDebugView = false;
+        return;
+      }
+
+      // If turning ON debug view
+      entry.isDebugView = true;
+      p.classList.add('debug-view');
+
+      // Build a multiline string showing all prompts/responses
+      // We’ll show them in a user-friendly way
+      const debugLines = [];
+      entry.debug.forEach((item, i) => {
+        debugLines.push(`Prompt #${i+1}:\n${item.prompt}\n\nResponse #${i+1}:\n${item.response}\n\n-----------\n`);
+      });
+      p.textContent = debugLines.join('');
+    }
+
+    // =========================
+    // ICON CLICK HANDLER
+    // =========================
+    function handleIconClick(messageId, action) {
+      console.log(`Icon clicked: ${action} for message ${messageId}`);
+
+      if (action === 'redo') {
+        const clickedIndex = conversationHistory.findIndex(e => e.id === messageId);
+        if (clickedIndex === -1) return;
+
+        const clickedEntry = conversationHistory[clickedIndex];
+
+        // Redo on user chunk
+        if (clickedEntry.role === 'user') {
+          const botIndex = conversationHistory.findIndex(
+            (e, idx) => idx > clickedIndex && e.role === 'bot' && e.userMessageId === messageId
+          );
+          if (botIndex !== -1) {
+            removeMessagesFromIndex(botIndex);
+          }
+          sendMessage(clickedEntry.content, clickedEntry.id);
+        }
+        // Redo on bot chunk
+        else if (clickedEntry.role === 'bot') {
+          const userMessageId = clickedEntry.userMessageId;
+          const userEntry = conversationHistory.find(e => e.id === userMessageId);
+          if (!userEntry) return;
+
+          // remove this bot chunk
+          const botElem = document.getElementById(clickedEntry.id);
+          if (botElem) botElem.remove();
+          conversationHistory = conversationHistory.filter(e => e.id !== clickedEntry.id);
+
+          // re-generate
+          sendMessage(userEntry.content, userEntry.id);
+        }
+      }
+      else if (action === 'edit') {
+        if (currentlyEditing === messageId) {
+          revertEditing(messageId);
+        } else {
+          startEditing(messageId);
+        }
+      }
+      else if (action === 'speak') {
+        // chunk-level speak
+        if (currentlySpokenChunk === messageId) {
+          // already speaking -> stop
+          stopSpeaking();
+        } else {
+          speakChunk(messageId);
+        }
+      }
+      else if (action === 'listen') {
+        // For chunk-level "listen," not implementing new STT logic here
+        // Typically you'd do edit+listen if you wanted to replace chunk text with speech
+        console.log("Listen button clicked at chunk-level. (No new speech recognition here.)");
+      }
+      else if (action === 'think') {
+        handleThinkClick(messageId);
+      }
+      else if (action === 'view') {
+        // NEW: Toggle debug view
+        toggleView(messageId);
+      }
+    }
+
+    // =========================
+    // INPUT-ICON CLICK HANDLER
+    // (for the icons next to the user input)
+    // =========================
+    function handleInputIconClick(action) {
+      if (action === 'listen') {
+        // Use speech recognition to fill userInput
+        if (!SpeechRecognition) {
+          alert("Speech recognition not supported in this browser.");
+          return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          userInput.value = transcript;
+        };
+        recognition.onerror = (e) => {
+          console.error("Speech recognition error", e);
+        };
+        recognition.onend = () => {
+          console.log("Speech recognition ended.");
+        };
+
+        recognition.start();
+      }
+      else if (action === 'think') {
+        // "Think" on the user's typed text
+        handleThinkClick(-1); // pass -1 to treat as user prompt area
+      }
+    }
+
+    // =========================
+    // PYODIDE / CODE RUN
+    // =========================
+    async function runCode() {
+      const code = editor.getValue();
+      try {
+        const output = await pyodide.runPythonAsync(code);
+        alert(`Output: ${output}`);
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    function copyCode() {
+      const code = editor.getValue();
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Code copied to clipboard!');
+      });
+    }
+
+    // =========================
+    // DETECT PYTHON CODE
+    // =========================
+    function isPythonCode(message) {
+      return message.startsWith('```python') && message.endsWith('```');
+    }
+
+    function appendPythonPlugin(messageId, code) {
+      const pluginButton = document.createElement('button');
+      pluginButton.textContent = '[>_]';
+      pluginButton.onclick = () => showCodeWindow(code);
+
+      const messageElement = document.getElementById(messageId);
+      const buttonContainer = messageElement.querySelector('.icon-row:last-child');
+      if (buttonContainer) {
+        buttonContainer.appendChild(pluginButton);
+      }
+    }
+
+    function showCodeWindow(code) {
+      const pythonCode = code.replace(/```python|```/g, '').trim();
+      const codeWindow = window.open('', '_blank', 'width=800,height=600');
+      codeWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>Python Code</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                }
+                pre {
+                    background: #f4f4f4;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+                button {
+                    padding: 10px 20px;
+                    margin: 10px 0;
+                    border: none;
+                    background: #007bff;
+                    color: white;
+                    border-radius: 5px;
+                    cursor: pointer;
+                }
+                button:hover {
+                    background: #0056b3;
+                }
+            </style>
+        </head>
+        <body>
+            <h3>Python Code</h3>
+            <pre>${pythonCode}</pre>
+            <button onclick="copyToClipboard()">Copy Code</button>
+            <button onclick="runCode()">Run Code</button>
+            <script>
+                function copyToClipboard() {
+                    navigator.clipboard.writeText(\`${pythonCode}\`);
+                    alert('Code copied to clipboard!');
+                }
+                async function runCode() {
+                    try {
+                        const pyodide = await loadPyodide();
+                        const output = await pyodide.runPythonAsync(\`${pythonCode}\`);
+                        alert('Output: ' + output);
+                    } catch (error) {
+                        alert('Error: ' + error.message);
+                    }
+                }
+            <\/script>
+            <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"><\/script>
+        </body>
+        </html>
+      `);
+    }
+  </script>
+</body>
+</html>

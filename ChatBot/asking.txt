@@ -1,0 +1,35 @@
+Chat API then displays Cohere’s answer. Unless … that answer starts with A8B4. In that case, take the rest of the answer and use javascript’s eval function to run the program and get the real answer that you display in the chat window.But also provide a [>_] feature (         ) to show the javascript code.
+
+
+
+The chtbot didn't show a [>_] when I ask  "What is the answer of 3 + 2?" or "Give me the answer of 2 * 3.".
+My askings are:
+Ever time, the chatbot encounter math problem, it must use the plugin to solve the math problem， and show [>_] icon.
+When touch [>_] icon, it should display the process that how the plugin get the answer.
+E.g. User ask: "What is the answer of 3 + 2?".
+The chatbot should show something like: "The answer is 5. [>_]", and if touch [>_]
+Then the user will see a block like: 
+"
+python:
+answer = 3 + 2
+"
+or
+"javascript
+......
+"
+
+
+Good job.
+But there is a small problem.
+Just show the [>_] button, not output [>_] after the answer.
+And please use a "dictionary" to record the conversation.
+For example, if I tell the chatbot "let a = 2+3.".
+And then I ask it "What is the answer of a * 3?".
+It should tell me the answer like "15", with [>_] button.
+
+It can answer normal question.
+But it don't achive my acquirement.
+Please use a "dictionary" to record the conversation.
+For example, if I tell the chatbot "let a = 2+3.".
+And then I ask it "What is the answer of a * 3?".
+It should tell me the answer like "15", with [>_] button.

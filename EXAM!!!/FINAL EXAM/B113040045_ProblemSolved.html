@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot with Cohere</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .messages {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .user {
+            color: blue;
+        }
+        .bot {
+            color: green;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #editor {
+            height: 200px;
+        }
+        .message-buttons {
+            display: inline-flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+
+        <textarea id="user-input" placeholder="Type your message here..."></textarea>
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="runCode()">Run Code</button>
+        <button onclick="copyCode()">Copy Code</button>
+
+        <div id="editor"></div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('user-input');
+        const editor = ace.edit("editor");
+        editor.setTheme("ace/theme/github");
+        editor.session.setMode("ace/mode/python");
+
+        let conversationHistory = [];
+        let pyodide;
+
+        async function loadPyodideAndPackages() {
+            pyodide = await loadPyodide();
+        }
+
+        loadPyodideAndPackages();
+
+        async function sendMessage(userMessage = null, messageId = null) {
+            userMessage = userMessage || userInput.value.trim();
+            if (!userMessage) return;
+
+            if (!messageId) {
+                messageId = appendMessage('user', userMessage);
+                conversationHistory.push({ role: 'user', content: userMessage, id: messageId, history: [userMessage] });
+            } else {
+                const userEntry = conversationHistory.find(entry => entry.id === messageId);
+                userEntry.content = userMessage;
+                userEntry.history.push(userMessage);
+            }
+
+            userInput.value = '';
+
+            const response = await fetch('https://api.cohere.ai/v1/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ABqF8Z0I1Yxjf68lt7V9UEAMcBHlzEgNIjgIZWVF'
+                },
+                body: JSON.stringify({
+                    prompt: buildPrompt(userMessage),
+                    max_tokens: 100,
+                    temperature: 0.7
+                })
+            });
+
+            const data = await response.json();
+            const botMessage = data.generations[0].text.trim();
+
+            removeOldBotMessage(messageId);
+            const botMessageId = appendMessage('bot', botMessage);
+
+            conversationHistory.push({ role: 'bot', content: botMessage, userMessageId: messageId, id: botMessageId });
+
+            if (isPythonCode(botMessage)) {
+                appendPythonPlugin(botMessageId, botMessage);
+            }
+        }
+
+        function buildPrompt(userMessage) {
+            let historyText = conversationHistory.map(entry => `${entry.role === 'user' ? 'You' : 'Bot'}: ${entry.content}`).join('\n');
+            return `${historyText}\nYou: ${userMessage}\nBot:`;
+        }
+
+        function appendMessage(role, content) {
+            const messageId = `message-${Date.now()}`;
+            const message = document.createElement('div');
+            message.className = `message ${role}`;
+            message.id = messageId;
+            message.innerHTML = `
+                ${role === 'user' ? 'You' : 'Bot'}: ${content}
+                ${role === 'user' ? `<div class="message-buttons">
+                    <button onclick="editMessage('${messageId}')">Edit</button>
+                    <button onclick="showHistory('${messageId}')">History</button>
+                </div>` : ''}
+            `;
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageId;
+        }
+
+        function editMessage(messageId) {
+            const userEntry = conversationHistory.find(entry => entry.id === messageId);
+            const newContent = prompt('Edit your message:', userEntry.content);
+
+            if (newContent) {
+                userEntry.content = newContent;
+                const messageElement = document.getElementById(messageId);
+                messageElement.innerHTML = `
+                    You: ${newContent}
+                    <div class="message-buttons">
+                        <button onclick="editMessage('${messageId}')">Edit</button>
+                        <button onclick="showHistory('${messageId}')">History</button>
+                    </div>
+                `;
+                sendMessage(newContent, messageId);
+            }
+        }
+
+        function removeOldBotMessage(userMessageId) {
+            const botMessage = conversationHistory.find(entry => entry.role === 'bot' && entry.userMessageId === userMessageId);
+            if (botMessage) {
+                const botMessageElement = document.getElementById(botMessage.id);
+                if (botMessageElement) botMessageElement.remove();
+                conversationHistory = conversationHistory.filter(entry => entry.id !== botMessage.id);
+            }
+        }
+
+        function showHistory(messageId) {
+            const userEntry = conversationHistory.find(entry => entry.id === messageId);
+            const historyWindow = window.open('', '_blank', 'width=600,height=400');
+            historyWindow.document.write('<h3>Message History</h3>');
+            userEntry.history.forEach((version, index) => {
+                historyWindow.document.write(`<p>Version ${index + 1}: ${version}</p>`);
+            });
+        }
+
+        async function runCode() {
+            const code = editor.getValue();
+
+            try {
+                const output = await pyodide.runPythonAsync(code);
+                alert(`Output: ${output}`);
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        function copyCode() {
+            const code = editor.getValue();
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copied to clipboard!');
+            });
+        }
+
+        function isPythonCode(message) {
+            return message.startsWith('```python') && message.endsWith('```');
+        }
+
+        function appendPythonPlugin(messageId, code) {
+            const pluginButton = document.createElement('button');
+            pluginButton.textContent = '[>_]';
+            pluginButton.onclick = () => showCodeWindow(code);
+
+            const messageElement = document.getElementById(messageId);
+            const buttonContainer = messageElement.querySelector('.message-buttons');
+            buttonContainer.appendChild(pluginButton);
+        }
+
+        function showCodeWindow(code) {
+            const pythonCode = code.replace(/```python|```/g, '').trim();
+            const codeWindow = window.open('', '_blank', 'width=800,height=600');
+            codeWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Python Code</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                        }
+                        pre {
+                            background: #f4f4f4;
+                            padding: 10px;
+                            border: 1px solid #ddd;
+                            border-radius: 5px;
+                            overflow-x: auto;
+                        }
+                        button {
+                            padding: 10px 20px;
+                            margin: 10px 0;
+                            border: none;
+                            background: #007bff;
+                            color: white;
+                            border-radius: 5px;
+                            cursor: pointer;
+                        }
+                        button:hover {
+                            background: #0056b3;
+                        }
+                    <\/style>
+                </head>
+                <body>
+                    <h3>Python Code</h3>
+                    <pre>${pythonCode}<\/pre>
+                    <button onclick="copyToClipboard()">Copy Code</button>
+                    <button onclick="runCode()">Run Code</button>
+                    <script>
+                        function copyToClipboard() {
+                            navigator.clipboard.writeText(\`${pythonCode}\`);
+                            alert('Code copied to clipboard!');
+                        }
+
+                        async function runCode() {
+                            try {
+                                const pyodide = await loadPyodide();
+                                const output = await pyodide.runPythonAsync(\`${pythonCode}\`);
+                                alert('Output: ' + output);
+                            } catch (error) {
+                                alert('Error: ' + error.message);
+                            }
+                        }
+                    <\/script>
+                    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"><\/script>
+                </body>
+                </html>
+            `);
+        }
+
+    </script>
+</body>
+</html>
