@@ -10,3 +10,5 @@ After most of the project is done, the programmer adjust the output detail to fi
   
 Therefore, **programmers do not need to write much code;  
 we only need to read and understand the logic output by the LLM**.  
+
+2024.9 ~ 2024.12  
