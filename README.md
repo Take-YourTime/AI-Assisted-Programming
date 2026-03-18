@@ -184,3 +184,5 @@ Each project folder is self-contained. General instructions:
 ---
 
 *Course: AI-Assisted Programming | 2024.9 – 2024.12*
+*This ReadMe file is made by copilot AI agent*  
+  
