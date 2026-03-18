@@ -60,61 +60,7 @@ A feature-rich ChatGPT-style web application with a polished UI and multiple fun
 
 ---
 
-### 4. 🎲 CreateRotationCube
-**Tech:** Python (Pillow / GIF generation)  
-A Python program that reads six custom colors from a `sidecolor.txt` file and generates an animated `.gif` of a 3D-rendered cube that rotates continuously. The animation demonstrates four rotation styles: balanced, above, one-corner, and pirouette.
-
-- `sidecolor.txt` — defines the six face colors of the cube
-- `CreateRotationCube.py` — the Python program
-- `rotating_cube.gif` — the generated animated output
-
----
-
-### 5. 🧩 MagicCubic
-**Tech:** Python, Pygame  
-An interactive 3D Rubik's Cube game rendered with Pygame. The cube is composed of smaller cube objects, each with coloured faces.
-
-**Controls:**
-- **Normal mode:** Hold left-click and drag to rotate the entire cube. Hover over the center cell of a face to highlight it; click to enter rotation mode.
-- **Rotation mode:** Left-click rotates the selected face −90°; right-click rotates +90°; `ESC` cancels.
-
-- `Asking.txt` / `Asking_before.txt` — the prompt history
-- `cube.py` / `cube2.py` / `cube3.py` — iterative versions of the cube implementation
-- `RubicCube.jpeg` — reference image used in prompting
-
----
-
-### 6. 👻 PacMan
-**Tech:** Python, Pygame  
-A Pac-Man clone built with Pygame. Includes:
-- A maze with pellets and walls
-- A player character (Pac-Man) with sprite images
-- Multiple ghost enemies with individual AI behaviour
-- Score tracking and lives system
-
-- `pacman.py` — main game entry point
-- `Player.py` — player class
-- `Ghost.py` — ghost class
-- `initialization.py` — screen/grid setup
-- `pacman.png`, `pacman2.png`, `ghost*.png` — game sprites
-
----
-
-### 7. 🚀 SpcaeInvater *(Space Invader)*
-**Tech:** HTML, JavaScript  
-A classic Space Invader-style web game. Features include:
-- Player spaceship moves left/right with arrow keys; press `Z` to fire (hold for continuous fire)
-- Grid of alien enemies that move in sync and fire back randomly
-- Destructible barriers between the player and enemies (pixel-level damage)
-- Player starts with 10 lives; game ends when lives reach 0 or all aliens are defeated
-
-- `asking.txt` — the prompt used to build the game
-- `final/game.html` + `final/game.js` — the finished playable game
-- `temp/` — intermediate development versions
-
----
-
-### 8. ♟️ Chess
+### 4. ♟️ Chess
 **Tech:** Python, Terminal UI (Unicode), Networking (socket)  
 A two-player online chess game played entirely in the terminal, connected over a local network via a server-client architecture.
 
@@ -130,6 +76,60 @@ A two-player online chess game played entirely in the terminal, connected over a
 - `final/server.py` + `final/client.py` — networked online game
 - `final/share.py` — shared game logic
 - `final/chcp 65001.txt` — terminal encoding note
+
+---
+
+### 5. 🎲 CreateRotationCube
+**Tech:** Python (Pillow / GIF generation)  
+A Python program that reads six custom colors from a `sidecolor.txt` file and generates an animated `.gif` of a 3D-rendered cube that rotates continuously. The animation demonstrates four rotation styles: balanced, above, one-corner, and pirouette.
+
+- `sidecolor.txt` — defines the six face colors of the cube
+- `CreateRotationCube.py` — the Python program
+- `rotating_cube.gif` — the generated animated output
+
+---
+
+### 6. 🧩 MagicCubic
+**Tech:** Python, Pygame  
+An interactive 3D Rubik's Cube game rendered with Pygame. The cube is composed of smaller cube objects, each with coloured faces.
+
+**Controls:**
+- **Normal mode:** Hold left-click and drag to rotate the entire cube. Hover over the center cell of a face to highlight it; click to enter rotation mode.
+- **Rotation mode:** Left-click rotates the selected face −90°; right-click rotates +90°; `ESC` cancels.
+
+- `Asking.txt` / `Asking_before.txt` — the prompt history
+- `cube.py` / `cube2.py` / `cube3.py` — iterative versions of the cube implementation
+- `RubicCube.jpeg` — reference image used in prompting
+
+---
+
+### 7. 👻 PacMan
+**Tech:** Python, Pygame  
+A Pac-Man clone built with Pygame. Includes:
+- A maze with pellets and walls
+- A player character (Pac-Man) with sprite images
+- Multiple ghost enemies with individual AI behaviour
+- Score tracking and lives system
+
+- `pacman.py` — main game entry point
+- `Player.py` — player class
+- `Ghost.py` — ghost class
+- `initialization.py` — screen/grid setup
+- `pacman.png`, `pacman2.png`, `ghost*.png` — game sprites
+
+---
+
+### 8. 🚀 SpcaeInvater *(Space Invader)*
+**Tech:** HTML, JavaScript  
+A classic Space Invader-style web game. Features include:
+- Player spaceship moves left/right with arrow keys; press `Z` to fire (hold for continuous fire)
+- Grid of alien enemies that move in sync and fire back randomly
+- Destructible barriers between the player and enemies (pixel-level damage)
+- Player starts with 10 lives; game ends when lives reach 0 or all aliens are defeated
+
+- `asking.txt` — the prompt used to build the game
+- `final/game.html` + `final/game.js` — the finished playable game
+- `temp/` — intermediate development versions
 
 ---
 
