@@ -1,0 +1,22 @@
+Good job!
+Now, let's make this to be a online chess game.
+This game can be play by the two computers which is connect by the above server-client program.
+
+I run the program, and the client can connect to server.
+But when I move the chess, it shoe this message"expected uci string to be of length 4 or 5: 'Hello from client'"
+And the client terminal doesn't show the game
+
+Please set the UCI format coordinate numbers suround the checkerboard.
+Don't change other thing.
+
+Nice!
+Then, let's change the way of playing this chess game.
+Use mouse to select a piece to move intead of using UCI format.
+And mad the ui interface like the picture which I give to you, especial the checkerboard.
+
+List the images that I need to build.
+Do I need to made the client have same pictures?
+
+Ok, I finish create the pictures.
+I called them whiteking.png, whitequeen.png...
+Please help me fix the program about the name of images.

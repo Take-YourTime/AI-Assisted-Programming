@@ -1,0 +1,91 @@
+Make a chess online game that use python program.
+This game should be run on the windows terminal.
+The game can be connected between two computer and let two players to play on two computer.
+
+The rule of this game:
+1.A blinking square indicates where the selection cursor is.
+2.The color of the blinking square can be:
+	Blue: You are in “select a piece” mode. Hit “Enter” to transition to green2.
+	Green: You are in select where to move to” mode. Hit “Enter” to make the move.
+	Yellow: a selection error. It only blinks one time then reverts to the previous color.
+3.If you are blue and hit enter when you are:
+ On one of you pieces: Go to green.
+ On one of the other player’s pieces: Go yellow one blink, then back to blue.
+ On a blank square: stay blue.
+4.If you are green and hit enter when you are:
+ On an illegal place for your selected piece to move to: Blink yellow, then back to green.
+ On one of the other player’s pieces: Blink yellow, then back to green (because we aren’t yet implemented the capturing of pieces).
+ On a legal place for your selected piece to move to: Move the piece to there, then Go blue and allow the player to move another one of their pieces (the other side does not get to move, but your program should have a variable that lets you set which side you are).
+5.If you are green and hit escape:
+ Go back to blue.
+
+The checkboard rule is that:
+An indication of how one corner portion of the board is drawn (the upper left corner). Here eight yellow squares highlight where eight unicode characters are (and what colors they have).
+
+As below picture.
+
+
+Don't use pygame, this game should be play and show on the terminal.
+The checkboard should be as same as the below picture explain.
+You can use unicode to represent pieces.
+
+The rule of this game:
+1.A blinking square indicates where the selection cursor is.
+2.The color of the blinking square can be:
+	Blue: You are in “select a piece” mode. Hit “Enter” to transition to green2.
+	Green: You are in select where to move to” mode. Hit “Enter” to make the move.
+	Yellow: a selection error. It only blinks one time then reverts to the previous color.
+3.If you are blue and hit enter when you are:
+ On one of you pieces: Go to green.
+ On one of the other player’s pieces: Go yellow one blink, then back to blue.
+ On a blank square: stay blue.
+4.If you are green and hit enter when you are:
+ On an illegal place for your selected piece to move to: Blink yellow, then back to green.
+ On one of the other player’s pieces: Blink yellow, then back to green (because we aren’t yet implemented the capturing of pieces).
+ On a legal place for your selected piece to move to: Move the piece to there, then Go blue and allow the player to move another one of their pieces (the other side does not get to move, but your program should have a variable that lets you set which side you are).
+5.If you are green and hit escape:
+ Go back to blue.
+
+
+
+
+I adjust the code as follow.
+Please made brown color suround the check board.
+The select rules:
+1. The background of current position is blue.
+2. In selection mode, press "Enter" to select current position, or press "↑,↓,←,→" to move.
+3. If there is a piece at selected location, turn into moving mode and show all the legal moving-destination of it with green background until select next piece or change turn.
+4. Then use "↑,↓,←,→" to move, and press "Enter" to select a destination. If the selected position is legal, move the piece to the destination. If there is an opposite piece, eat it.
+5. If the selected destination is illegal, made the background become yellow for 1 second, then back to selection mode.
+
+
+Greate.
+Now the problem is:
+1. It show black at current position, the background color of current square on check board should be blue.
+2. The moving rules of each piece is wrong. They should move as same as chess game.
+3. After move one piece, change to the opposite to move.
+
+Good.
+Now the problems are:
+1. Pieces can't eat the piece which is at same team.
+2. The background of current position is blue, but it is black now. Maybe try changing the backgrund color.
+3. In moving mode, the background of legal destination is green. And when select illegal destination, it should back to selection mode.
+
+The select rules:
+1. The background of current position is blue. And it should be shine. blue→origin→blue→origin...
+2. In selection mode, press "Enter" to select current position, or press "↑,↓,←,→" to move.
+3. If there is a piece at selected location, turn into moving mode and show all the legal moving-destination of it with green background until select next piece or change turn.
+4. Then use "↑,↓,←,→" to move, and press "Enter" to select a destination. If the selected position is legal, move the piece to the destination. If there is an opposite piece, eat it.
+5. If the selected destination is illegal, made the background become yellow for 1 second, then back to selection mode.
+
+
+Give you my function that moveing chess.
+Help me made the chess can eat the opposite team pieces.
+First step of pawn can choose to move 1 or move 2.
+Pawn can't eat the piece in front of it, it can only eat the piece diagonally it, just like the chess rule.
+Don't let piece eat the pieces that at same team.
+
+Good job! Now let's turn this chess game to a online chess game. I will give you my current code later.
+This game can let two computer connect themselves by using terminal, and play chess on the terminal.
+After each move, terminal update and show the current check board on each terminal of two computers.
+
