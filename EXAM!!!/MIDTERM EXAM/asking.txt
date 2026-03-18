@@ -1,0 +1,35 @@
+Use python code to create 5 random playing cards image.
+Cards are at the top of image and there is a blank amount them.
+Use the unicode to create the symbol.
+Show the image.
+
+Good job! Some problems.
+The carreaux and the coeurs cards should be red.
+Only the cards paper is white, the background is black.
+
+The code can't run.
+'ImageDraw' object has no attribute 'textsize'
+
+Good job!
+Make the card number on the top left of the card, and make the symbol on the top right of the card.
+Let the height of picture be higher. 
+
+
+Good job!
+Now, let's make this become a poker game.
+Each card has its index, from left to right is: 1, 2, 3, 4, 5.
+Then the program will ask player "What do you want to discard?".
+Player will input some number, such as "1, 2, 4", then the first card, the second card and the fourth card shuld be replaced by new cards.
+Each time, after discarding cards, produce a new image and show accroading to current five cards.
+Note that, the player shouldn't get repeated card at anytime!!!
+
+After ask player "What do you want to discard?" or player input "none", output the result of cards.
+The result may be "Straight flush", "Four of a kind", "Full house", "Three of a kind", "Straight", "Flush", "Two pair", "Two of a kind", or "Nothing". The result is recroading to the last five cards.
+
+After print the output, repeat the game by give player new five cards, you can use "While 1: pass".
+
+
+Now, I want you to act as a python REPL, and run this python program.
+If the program has output, just output it.
+If the program create a picture, then give me a link to download the picture or just show the picture.
+If the program need input, ask me to input.
